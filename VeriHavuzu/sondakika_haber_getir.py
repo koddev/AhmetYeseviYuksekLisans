@@ -65,13 +65,58 @@ dfilce=pd.read_csv("haber_ilce.csv")
 df = pd.concat([dfil,dfilce],ignore_index=True)
 df = df.drop_duplicates(subset=['title']) 
 df.drop("Unnamed: 0",axis=1,inplace=True)
+df['tarih'] = pd.to_datetime(df['tarih'], errors='coerce')
+df['city2']=df['city2'].apply(lambda x:x.lower())
+
 df.dropna()
 
 # %%
 
-df['tarih'] = pd.to_datetime(df['tarih'], errors='coerce')
-df['city2']=df['city2'].apply(lambda x:x.lower())
 
-df[df["city"] != df["city2"] ].head()
 
+# df[df["city"] != df["city2"] ].head()
+
+# %%
+
+from ollama import Client
+from ollama  import GenerateResponse
+
+client = Client(
+  host='http://192.168.200.38:11435',
+  headers={'x-some-header': 'some-value'}
+)
+
+def Suc_Turu(metin:str):
+
+    prompt = """
+    Aşağıda suç türleri 5 gruba ayrılmıştır. sana vereceğim haber metni için bu 5 gruptan birini seç ve 
+    Cevabı suç_türü,grup_no özellikleri içeren json formatında ver.
+    suç_türü olarak sana verdiğim türlerden birini seç,onun dışında başka birşey yazma.
+
+    suç türleri:
+    1- Şiddet Suçları
+    2- Mala Karşı İşlenen Suçlar
+    3- Ekonomik Suçlar
+    4- Siber Suçlar
+    5- Düzen ve Kamu Güvenliğine Karşı İşlenen Suçlar
+    6- Narkotik Suçları
+    7- Organize Örgüt Suçları
+    8- Hiçbiri
+
+    Metin :
+    {}
+
+    """.format(metin)
+    
+    response: GenerateResponse = client.generate(model='llama3.1:70b', prompt=prompt,format="json",keep_alive="5h")
+    print(metin) 
+    print(response["response"]) 
+    return response["response"]
+
+ 
+# %%
+
+dfTest = df.head(10)
+
+dfTest['suc_turu'] = dfTest['title'].apply(Suc_Turu)
 # %%
